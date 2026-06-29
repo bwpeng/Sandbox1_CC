@@ -36,7 +36,7 @@
       <h1 class="main-title">FIFA WORLD CUP</h1>
       <h2 class="year-badge">2026™</h2>
       <p class="host-line">🇺🇸 USA &nbsp;·&nbsp; 🇨🇦 CANADA &nbsp;·&nbsp; 🇲🇽 MEXICO</p>
-      <div class="date-chip">Group Stage &nbsp;·&nbsp; June 27, 2026</div>
+      <div class="date-chip" id="dateChip">Today</div>
 
       <button class="open-btn" id="openScoresBtn">
         <span class="open-btn-ball">⚽</span>
@@ -44,7 +44,7 @@
         <span class="open-btn-live-dot"></span>
       </button>
 
-      <p class="scroll-hint">↑ 4 matches live right now</p>
+      <p class="scroll-hint">Real-time scores · powered by TheSportsDB</p>
     </div>
 
     <!-- Cartoon pitch markings at the bottom -->
@@ -64,7 +64,7 @@
           <span class="header-ball" id="headerBall">⚽</span>
           <div>
             <div class="popup-title">FIFA WORLD CUP 2026™</div>
-            <div class="popup-subtitle">June 27, 2026 &nbsp;·&nbsp; Group Stage</div>
+            <div class="popup-subtitle" id="popupSubtitle">Live Scores</div>
           </div>
         </div>
         <button class="close-btn" id="closeScoresBtn" aria-label="Close">✕</button>
@@ -86,7 +86,7 @@
       <div class="popup-footer">
         <div class="footer-status">
           <span class="footer-pulse"></span>
-          Auto-updating every 30s
+          Live · data by TheSportsDB
         </div>
         <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
       </div>

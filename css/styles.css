@@ -455,7 +455,52 @@ body {
 }
 
 .empty-icon { font-size: 3rem; }
-.empty-msg  { font-size: 0.9rem; font-weight: 800; margin-top: 0.5rem; }
+.empty-msg  { font-size: 0.9rem; font-weight: 800; margin-top: 0.5rem; color: #999; }
+.empty-sub  { font-size: 0.72rem; font-weight: 700; margin-top: 0.35rem; color: #c2c2c2; }
+
+/* Spinning ball (loading) */
+.spin-ball {
+  display: inline-block;
+  animation: spinSlow 0.9s linear infinite;
+}
+
+/* Crest / badge image used when no flag emoji is available */
+.flag-img {
+  width: 1.9rem;
+  height: 1.9rem;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.18));
+}
+
+.detail-flag-img {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 0.3rem;
+}
+
+/* Loading row inside detail popup */
+.loading-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #aaa;
+}
+
+/* Generic note inside detail (no goals / no stats) */
+.detail-note {
+  text-align: center;
+  color: #bbb;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.6rem 0 1.1rem;
+}
 
 /* Footer */
 .popup-footer {

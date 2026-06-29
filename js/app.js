@@ -1,182 +1,475 @@
 /* =====================================================
-   FIFA World Cup 2026 — Live Scores App
+   FIFA World Cup — Live Scores App
+   Real data from TheSportsDB (free, CORS-enabled API)
    ===================================================== */
 
 // =====================================================
-// MATCH DATA  (June 27, 2026 · Group Stage · Day 17)
+// CONFIG
 // =====================================================
-const MATCHES = {
-  live: [
-    {
-      id: 1,
-      group: 'Group B · Matchday 3',
-      home: { code: 'USA', name: 'United States', flag: '🇺🇸' },
-      away: { code: 'IRAN', name: 'Iran', flag: '🇮🇷' },
-      score: [2, 1],
-      minute: 67,
-      status: 'live',
-      venue: 'MetLife Stadium, New Jersey',
-      homeGoals: ["Pulisic 23'", "Weah 54'"],
-      awayGoals: ["Taremi 41'"],
-      stats: { possession:[58,42], shots:[12,7], onTarget:[5,3], corners:[6,3], fouls:[8,11], yellows:[1,2] }
-    },
-    {
-      id: 2,
-      group: 'Group G · Matchday 3',
-      home: { code: 'FRANCE', name: 'France', flag: '🇫🇷' },
-      away: { code: 'MOROCCO', name: 'Morocco', flag: '🇲🇦' },
-      score: [1, 1],
-      minute: '45+3',
-      status: 'live',
-      venue: 'AT&T Stadium, Dallas',
-      homeGoals: ["Mbappé 31'"],
-      awayGoals: ["En-Nesyri 44'"],
-      stats: { possession:[54,46], shots:[9,6], onTarget:[4,3], corners:[4,2], fouls:[6,9], yellows:[0,1] }
-    },
-    {
-      id: 3,
-      group: 'Group E · Matchday 3',
-      home: { code: 'JAPAN', name: 'Japan', flag: '🇯🇵' },
-      away: { code: 'CROATIA', name: 'Croatia', flag: '🇭🇷' },
-      score: [0, 0],
-      minute: 'HT',
-      status: 'live',
-      venue: 'SoFi Stadium, Los Angeles',
-      homeGoals: [],
-      awayGoals: [],
-      stats: { possession:[45,55], shots:[4,5], onTarget:[1,2], corners:[3,4], fouls:[7,5], yellows:[1,1] }
-    },
-    {
-      id: 4,
-      group: 'Group F · Matchday 3',
-      home: { code: 'PORTUGAL', name: 'Portugal', flag: '🇵🇹' },
-      away: { code: 'SWISS', name: 'Switzerland', flag: '🇨🇭' },
-      score: [3, 0],
-      minute: 22,
-      status: 'live',
-      venue: 'Lumen Field, Seattle',
-      homeGoals: ["Ronaldo 8'", 'Félix 17\'', "Leão 21'"],
-      awayGoals: [],
-      stats: { possession:[62,38], shots:[10,2], onTarget:[4,0], corners:[5,1], fouls:[3,8], yellows:[0,1] }
-    },
-  ],
+const API_KEY    = '3';                                  // TheSportsDB free/test key
+const API_V1     = `https://www.thesportsdb.com/api/v1/json/${API_KEY}`;
+const WC_LEAGUE  = '4429';                               // FIFA World Cup league id
+const REFRESH_MS = 45000;                                // auto-refresh interval
 
-  upcoming: [
-    {
-      id: 5,
-      group: 'Group H · Matchday 3',
-      home: { code: 'BRAZIL', name: 'Brazil', flag: '🇧🇷' },
-      away: { code: 'SERBIA', name: 'Serbia', flag: '🇷🇸' },
-      kickOff: '18:00',
-      status: 'upcoming',
-      venue: 'Gillette Stadium, Boston',
-    },
-    {
-      id: 6,
-      group: 'Group C · Matchday 3',
-      home: { code: 'GERMANY', name: 'Germany', flag: '🇩🇪' },
-      away: { code: 'SPAIN', name: 'Spain', flag: '🇪🇸' },
-      kickOff: '21:00',
-      status: 'upcoming',
-      venue: 'Rose Bowl, Los Angeles',
-    },
-    {
-      id: 10,
-      group: 'Group A · Matchday 3',
-      home: { code: 'CANADA', name: 'Canada', flag: '🇨🇦' },
-      away: { code: 'ECUADOR', name: 'Ecuador', flag: '🇪🇨' },
-      kickOff: '21:00',
-      status: 'upcoming',
-      venue: 'BMO Field, Toronto',
-    },
-  ],
-
-  results: [
-    {
-      id: 7,
-      group: 'Group C · Matchday 3',
-      home: { code: 'ARGENTINA', name: 'Argentina', flag: '🇦🇷' },
-      away: { code: 'MEXICO', name: 'Mexico', flag: '🇲🇽' },
-      score: [2, 1],
-      status: 'finished',
-      venue: 'Estadio Azteca, Mexico City',
-      homeGoals: ["Messi 34'", "Di María 78'"],
-      awayGoals: ["Lozano 56'"],
-      stats: { possession:[56,44], shots:[15,9], onTarget:[6,3], corners:[7,4], fouls:[9,12], yellows:[1,3] }
-    },
-    {
-      id: 8,
-      group: 'Group D · Matchday 3',
-      home: { code: 'ENGLAND', name: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-      away: { code: 'WALES', name: 'Wales', flag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿' },
-      score: [0, 0],
-      status: 'finished',
-      venue: 'BC Place, Vancouver',
-      homeGoals: [],
-      awayGoals: [],
-      stats: { possession:[52,48], shots:[8,6], onTarget:[2,1], corners:[5,3], fouls:[11,10], yellows:[2,2] }
-    },
-    {
-      id: 9,
-      group: 'Group A · Matchday 3',
-      home: { code: 'AUSTRALIA', name: 'Australia', flag: '🇦🇺' },
-      away: { code: 'NIGERIA', name: 'Nigeria', flag: '🇳🇬' },
-      score: [1, 2],
-      status: 'finished',
-      venue: 'BMO Field, Toronto',
-      homeGoals: ["Goodwin 61'"],
-      awayGoals: ["Osimhen 22'", "Iheanacho 88'"],
-      stats: { possession:[47,53], shots:[11,13], onTarget:[3,5], corners:[6,5], fouls:[10,8], yellows:[2,1] }
-    },
-  ]
+// =====================================================
+// COUNTRY FLAG EMOJI MAP (fallback to crest badge image)
+// =====================================================
+const FLAGS = {
+  'Argentina':'🇦🇷','Australia':'🇦🇺','Austria':'🇦🇹','Belgium':'🇧🇪','Bolivia':'🇧🇴',
+  'Brazil':'🇧🇷','Cameroon':'🇨🇲','Canada':'🇨🇦','Chile':'🇨🇱','Colombia':'🇨🇴',
+  'Costa Rica':'🇨🇷','Croatia':'🇭🇷','Czech Republic':'🇨🇿','Denmark':'🇩🇰','Ecuador':'🇪🇨',
+  'Egypt':'🇪🇬','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','France':'🇫🇷','Germany':'🇩🇪','Ghana':'🇬🇭',
+  'Greece':'🇬🇷','Iran':'🇮🇷','Italy':'🇮🇹','Ivory Coast':'🇨🇮','Jamaica':'🇯🇲',
+  'Japan':'🇯🇵','Mexico':'🇲🇽','Morocco':'🇲🇦','Netherlands':'🇳🇱','New Zealand':'🇳🇿',
+  'Nigeria':'🇳🇬','Norway':'🇳🇴','Panama':'🇵🇦','Paraguay':'🇵🇾','Peru':'🇵🇪',
+  'Poland':'🇵🇱','Portugal':'🇵🇹','Qatar':'🇶🇦','Saudi Arabia':'🇸🇦','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  'Senegal':'🇸🇳','Serbia':'🇷🇸','Slovakia':'🇸🇰','Slovenia':'🇸🇮','South Korea':'🇰🇷',
+  'Korea Republic':'🇰🇷','Spain':'🇪🇸','Sweden':'🇸🇪','Switzerland':'🇨🇭','Tunisia':'🇹🇳',
+  'Turkey':'🇹🇷','Ukraine':'🇺🇦','United States':'🇺🇸','USA':'🇺🇸','Uruguay':'🇺🇾',
+  'Wales':'🏴󠁧󠁢󠁷󠁬󠁳󠁿','Algeria':'🇩🇿','Honduras':'🇭🇳','El Salvador':'🇸🇻',
+  'Guatemala':'🇬🇹','Venezuela':'🇻🇪','South Africa':'🇿🇦','Mali':'🇲🇱','Cape Verde':'🇨🇻',
+  'Jordan':'🇯🇴','Uzbekistan':'🇺🇿','Curacao':'🇨🇼','Haiti':'🇭🇹','Bahrain':'🇧🇭',
+  'Iraq':'🇮🇶','UAE':'🇦🇪','New Caledonia':'🇳🇨','Bolivia ':'🇧🇴',
 };
+
+function flagFor(name, badge) {
+  const key = (name || '').trim();
+  if (FLAGS[key]) return `<span class="card-flag">${FLAGS[key]}</span>`;
+  if (badge) return `<img class="flag-img" src="${badge}" alt="${key}" loading="lazy">`;
+  return `<span class="card-flag">🏳️</span>`;
+}
+
+function bigFlagFor(name, badge) {
+  const key = (name || '').trim();
+  if (FLAGS[key]) return `<span class="detail-flag">${FLAGS[key]}</span>`;
+  if (badge) return `<img class="detail-flag-img" src="${badge}" alt="${key}">`;
+  return `<span class="detail-flag">🏳️</span>`;
+}
+
+// =====================================================
+// STATUS HELPERS
+// =====================================================
+const LIVE_STATUSES     = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE', 'INT'];
+const FINISHED_STATUSES = ['FT', 'AET', 'PEN', 'FT_PEN', 'AWD', 'WO', 'Match Finished'];
+
+function classify(ev) {
+  const s = (ev.strStatus || '').trim();
+  if (LIVE_STATUSES.includes(s)) return 'live';
+  if (FINISHED_STATUSES.includes(s)) return 'finished';
+  // Score present but unknown status while past kickoff → treat as live
+  if (s !== 'NS' && s !== '' && ev.intHomeScore != null && !isUpcomingStatus(s)) {
+    return 'finished';
+  }
+  return 'upcoming';
+}
+
+function isUpcomingStatus(s) {
+  return ['NS', 'TBD', 'PST', 'CANC', 'ABD', 'SUSP', 'Not Started'].includes(s);
+}
+
+function statusLabel(ev, kind) {
+  const s = (ev.strStatus || '').trim();
+  if (kind === 'live') {
+    const map = { '1H': '1st Half', '2H': '2nd Half', 'HT': 'Half Time', 'ET': 'Extra Time', 'P': 'Penalties', 'BT': 'Break' };
+    const base = map[s] || 'LIVE';
+    if (ev.strProgress && /\d/.test(ev.strProgress)) return `${ev.strProgress}'`;
+    return base;
+  }
+  if (kind === 'finished') {
+    if (s === 'AET') return 'AET';
+    if (s === 'PEN' || s === 'FT_PEN') return 'PENS';
+    return 'FT';
+  }
+  if (s === 'PST') return 'POSTPONED';
+  if (s === 'CANC') return 'CANCELLED';
+  return kickoffLabel(ev);
+}
+
+function roundLabel(ev) {
+  const r = (ev.intRound || '').toString();
+  const knockout = { '32': 'Round of 32', '16': 'Round of 16', '8': 'Quarter-final', '4': 'Semi-final', '2': 'Final', '1': 'Final' };
+  if (knockout[r]) return `🏆 ${knockout[r]}`;
+  if (ev.strGroup) return ev.strGroup;
+  if (r) return `Matchday ${r}`;
+  return 'FIFA World Cup';
+}
+
+function kickoffLabel(ev) {
+  if (!ev.strTimestamp) return ev.strTime ? ev.strTime.slice(0, 5) : 'TBD';
+  const d = new Date(ev.strTimestamp + 'Z');
+  if (isNaN(d)) return ev.strTime ? ev.strTime.slice(0, 5) : 'TBD';
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function todayStr() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 
 // =====================================================
 // STATE
 // =====================================================
 let currentTab = 'live';
-const liveMinutes = {}; // simulated minutes per live match id
-
-MATCHES.live.forEach(m => {
-  if (m.minute !== 'HT') liveMinutes[m.id] = Number(m.minute);
-});
+const state = { live: null, upcoming: null, results: null };
+const eventsById = {};            // id -> event (for detail lookups)
+const detailCache = {};           // id -> { timeline, stats }
+let prevLiveScores = {};          // id -> "h-a"
 
 // =====================================================
 // DOM REFS
 // =====================================================
-const openBtn       = document.getElementById('openScoresBtn');
-const closeScoresBtn= document.getElementById('closeScoresBtn');
-const scoresPopup   = document.getElementById('scoresPopup');
-const matchesArea   = document.getElementById('matchesArea');
-const refreshBtn    = document.getElementById('refreshBtn');
-const detailOverlay = document.getElementById('detailOverlay');
-const closeDetailBtn= document.getElementById('closeDetailBtn');
-const detailContent = document.getElementById('detailContent');
-const goalOverlay   = document.getElementById('goalOverlay');
-const confettiRoot  = document.getElementById('confettiRoot');
+const openBtn        = document.getElementById('openScoresBtn');
+const closeScoresBtn = document.getElementById('closeScoresBtn');
+const scoresPopup    = document.getElementById('scoresPopup');
+const matchesArea    = document.getElementById('matchesArea');
+const refreshBtn     = document.getElementById('refreshBtn');
+const detailOverlay  = document.getElementById('detailOverlay');
+const closeDetailBtn = document.getElementById('closeDetailBtn');
+const detailContent  = document.getElementById('detailContent');
+const goalOverlay    = document.getElementById('goalOverlay');
+const confettiRoot   = document.getElementById('confettiRoot');
+
+// =====================================================
+// DATA FETCHING
+// =====================================================
+async function fetchJSON(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function loadTab(tab, { silent = false } = {}) {
+  if (!silent && state[tab] == null) showLoading();
+
+  try {
+    let events = [];
+    if (tab === 'live') {
+      const data = await fetchJSON(`${API_V1}/eventsday.php?d=${todayStr()}&l=${WC_LEAGUE}`);
+      events = data.events || [];
+      // sort: in-play first, then upcoming, then finished; by kickoff time
+      events.sort((a, b) => order(a) - order(b) || tsOf(a) - tsOf(b));
+    } else if (tab === 'upcoming') {
+      const data = await fetchJSON(`${API_V1}/eventsnextleague.php?id=${WC_LEAGUE}`);
+      events = data.events || [];
+    } else if (tab === 'results') {
+      const data = await fetchJSON(`${API_V1}/eventspastleague.php?id=${WC_LEAGUE}`);
+      events = (data.events || []).filter(ev => classify(ev) === 'finished');
+    }
+
+    events.forEach(ev => { eventsById[ev.idEvent] = ev; });
+    state[tab] = events;
+
+    if (tab === 'live') detectGoals(events);
+    if (currentTab === tab) render();
+  } catch (err) {
+    if (currentTab === tab) showError(err.message);
+  }
+}
+
+function order(ev) {
+  const k = classify(ev);
+  return k === 'live' ? 0 : k === 'upcoming' ? 1 : 2;
+}
+function tsOf(ev) {
+  return ev.strTimestamp ? new Date(ev.strTimestamp + 'Z').getTime() : 0;
+}
+
+function loadActive(opts) { loadTab(currentTab, opts); }
+
+// =====================================================
+// GOAL DETECTION (celebrate on real score change)
+// =====================================================
+function detectGoals(events) {
+  const next = {};
+  let scored = false;
+  events.forEach(ev => {
+    if (classify(ev) !== 'live') return;
+    const key = `${ev.intHomeScore ?? 0}-${ev.intAwayScore ?? 0}`;
+    next[ev.idEvent] = key;
+    const prev = prevLiveScores[ev.idEvent];
+    if (prev !== undefined && prev !== key) {
+      const [ph, pa] = prev.split('-').map(Number);
+      const [nh, na] = key.split('-').map(Number);
+      if (nh > ph || na > pa) scored = true;
+    }
+  });
+  prevLiveScores = next;
+  if (scored && scoresPopup.classList.contains('open')) showGoalCelebration();
+}
+
+// =====================================================
+// RENDER
+// =====================================================
+function showLoading() {
+  matchesArea.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon spin-ball">⚽</div>
+      <div class="empty-msg">Loading live scores…</div>
+    </div>`;
+}
+
+function showError(msg) {
+  matchesArea.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">📡</div>
+      <div class="empty-msg">Couldn't load scores</div>
+      <div class="empty-sub">${msg || 'Please try again'} · tap ↻ Refresh</div>
+    </div>`;
+}
+
+function render() {
+  const data = state[currentTab];
+
+  if (data == null) { showLoading(); return; }
+
+  if (data.length === 0) {
+    const msg = currentTab === 'live'
+      ? 'No World Cup matches today'
+      : currentTab === 'upcoming'
+        ? 'No upcoming fixtures listed'
+        : 'No recent results';
+    matchesArea.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-msg">${msg}</div>
+        <div class="empty-sub">Check back when matches are scheduled</div>
+      </div>`;
+    return;
+  }
+
+  matchesArea.innerHTML = data.map((ev, i) => buildCard(ev, i * 55)).join('');
+  matchesArea.querySelectorAll('.match-card').forEach(card => {
+    card.addEventListener('click', () => openDetail(card.dataset.id));
+  });
+}
+
+function buildCard(ev, delay) {
+  const kind = currentTab === 'upcoming' ? 'upcoming' : classify(ev);
+  if (kind === 'upcoming') return buildUpcomingCard(ev, delay);
+
+  const isLive = kind === 'live';
+  const badge = isLive
+    ? `<span class="status-badge live-badge"><span class="badge-dot"></span>${statusLabel(ev, 'live')}</span>`
+    : `<span class="status-badge finished-badge">${statusLabel(ev, 'finished')}</span>`;
+
+  return `
+    <div class="match-card ${kind}" data-id="${ev.idEvent}" style="animation-delay:${delay}ms">
+      <div class="card-meta">
+        <span class="card-group">${roundLabel(ev)}</span>
+        ${badge}
+      </div>
+      <div class="card-score-row">
+        <div class="card-team home">
+          ${flagFor(ev.strHomeTeam, ev.strHomeTeamBadge)}
+          <div class="card-team-name">${ev.strHomeTeam || '—'}</div>
+        </div>
+        <div class="score-box">
+          <span class="score-num">${ev.intHomeScore ?? 0}</span>
+          <span class="score-sep">:</span>
+          <span class="score-num">${ev.intAwayScore ?? 0}</span>
+        </div>
+        <div class="card-team away">
+          ${flagFor(ev.strAwayTeam, ev.strAwayTeamBadge)}
+          <div class="card-team-name">${ev.strAwayTeam || '—'}</div>
+        </div>
+      </div>
+      <div class="card-venue">📍 ${ev.strVenue || 'TBD'}${ev.strCity ? ', ' + ev.strCity : ''}</div>
+    </div>`;
+}
+
+function buildUpcomingCard(ev, delay) {
+  return `
+    <div class="match-card upcoming" data-id="${ev.idEvent}" style="animation-delay:${delay}ms">
+      <div class="card-meta">
+        <span class="card-group">${roundLabel(ev)}</span>
+        <span class="status-badge upcoming-badge">${shortDate(ev)}</span>
+      </div>
+      <div class="card-score-row">
+        <div class="card-team home">
+          ${flagFor(ev.strHomeTeam, ev.strHomeTeamBadge)}
+          <div class="card-team-name">${ev.strHomeTeam || '—'}</div>
+        </div>
+        <div class="vs-box">
+          <span class="vs-label">VS</span>
+          <span class="vs-time">${kickoffLabel(ev)}</span>
+        </div>
+        <div class="card-team away">
+          ${flagFor(ev.strAwayTeam, ev.strAwayTeamBadge)}
+          <div class="card-team-name">${ev.strAwayTeam || '—'}</div>
+        </div>
+      </div>
+      <div class="card-venue">📍 ${ev.strVenue || 'TBD'}${ev.strCity ? ', ' + ev.strCity : ''}</div>
+    </div>`;
+}
+
+function shortDate(ev) {
+  if (!ev.strTimestamp) return ev.dateEvent || 'TBD';
+  const d = new Date(ev.strTimestamp + 'Z');
+  if (isNaN(d)) return ev.dateEvent || 'TBD';
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+// =====================================================
+// MATCH DETAIL
+// =====================================================
+async function openDetail(id) {
+  const ev = eventsById[id];
+  if (!ev) return;
+
+  const kind = classify(ev);
+  detailOverlay.classList.add('open');
+  renderDetail(ev, kind, null);   // header immediately, body loading
+
+  if (detailCache[id]) {
+    renderDetail(ev, kind, detailCache[id]);
+    return;
+  }
+
+  try {
+    const [tl, st] = await Promise.all([
+      fetchJSON(`${API_V1}/lookuptimeline.php?id=${id}`).catch(() => ({})),
+      fetchJSON(`${API_V1}/lookupeventstats.php?id=${id}`).catch(() => ({})),
+    ]);
+    const bundle = { timeline: tl.timeline || [], stats: st.eventstats || [] };
+    detailCache[id] = bundle;
+    // only update if still showing this match
+    if (detailOverlay.classList.contains('open')) renderDetail(ev, kind, bundle);
+  } catch {
+    if (detailOverlay.classList.contains('open')) renderDetail(ev, kind, { timeline: [], stats: [] });
+  }
+}
+
+function renderDetail(ev, kind, bundle) {
+  const isLive = kind === 'live';
+  const statusCls = isLive ? 'live-badge' : 'finished-badge';
+  const statusTxt = kind === 'upcoming'
+    ? kickoffLabel(ev) + (ev.strTimestamp ? ' · ' + shortDate(ev) : '')
+    : statusLabel(ev, kind);
+
+  let bodyHTML;
+  if (bundle == null) {
+    bodyHTML = `<div class="detail-body"><div class="loading-row"><span class="spin-ball">⚽</span> Loading match details…</div></div>`;
+  } else {
+    bodyHTML = `<div class="detail-body">${goalsSection(ev, bundle.timeline)}${statsSection(bundle.stats)}</div>`;
+  }
+
+  detailContent.innerHTML = `
+    <div class="detail-header">
+      <div class="detail-comp">${roundLabel(ev)} · ${ev.strSeason || ''}</div>
+      <div class="detail-status ${statusCls}">
+        ${isLive ? '<span class="badge-dot"></span>' : ''} ${statusTxt}
+      </div>
+      <div class="detail-teams">
+        <div class="detail-team">
+          ${bigFlagFor(ev.strHomeTeam, ev.strHomeTeamBadge)}
+          <div class="detail-team-code">${ev.strHomeTeam || '—'}</div>
+        </div>
+        <div class="detail-score-display">
+          <span class="detail-score-num">${ev.intHomeScore ?? '-'}</span>
+          <span class="detail-score-sep">:</span>
+          <span class="detail-score-num">${ev.intAwayScore ?? '-'}</span>
+        </div>
+        <div class="detail-team">
+          ${bigFlagFor(ev.strAwayTeam, ev.strAwayTeamBadge)}
+          <div class="detail-team-code">${ev.strAwayTeam || '—'}</div>
+        </div>
+      </div>
+      <div class="detail-venue">📍 ${ev.strVenue || 'TBD'}${ev.strCity ? ', ' + ev.strCity : ''}</div>
+    </div>
+    ${bodyHTML}`;
+}
+
+function goalsSection(ev, timeline) {
+  const goals = (timeline || [])
+    .filter(t => (t.strTimeline || '').toLowerCase() === 'goal')
+    .map(t => {
+      let tag = '';
+      const d = (t.strTimelineDetail || '').toLowerCase();
+      if (d.includes('penalty')) tag = ' (P)';
+      else if (d.includes('own')) tag = ' (OG)';
+      const side = (t.strHome === 'Yes') ? ev.strHomeTeam : ev.strAwayTeam;
+      return { min: parseInt(t.intTime) || 0, player: t.strPlayer || 'Goal', team: side, tag, flag: FLAGS[(side || '').trim()] || '⚽' };
+    })
+    .sort((a, b) => a.min - b.min);
+
+  const rows = goals.length
+    ? goals.map(g => `
+        <div class="goal-row">
+          <span class="goal-min">${g.min}'</span>
+          <span>${g.flag}</span>
+          <span>${g.player}${g.tag}</span>
+        </div>`).join('')
+    : `<p class="detail-note">${classify(ev) === 'upcoming' ? 'Match has not started yet ⏳' : 'No goals recorded'}</p>`;
+
+  return `<div class="detail-section">⚽ Goals</div><div class="goals-list">${rows}</div>`;
+}
+
+const STAT_ORDER = [
+  ['Ball Possession', 'Possession'],
+  ['Total Shots', 'Shots'],
+  ['Shots on Goal', 'On Target'],
+  ['Corner Kicks', 'Corners'],
+  ['Fouls', 'Fouls'],
+  ['Yellow Cards', 'Yellow Cards 🟨'],
+];
+
+function statsSection(stats) {
+  if (!stats || stats.length === 0) {
+    return `<div class="detail-section" style="margin-top:0.4rem">📊 Match Stats</div>
+            <p class="detail-note">Stats not available for this match</p>`;
+  }
+  const lookup = {};
+  stats.forEach(s => { lookup[s.strStat] = s; });
+
+  const rows = STAT_ORDER.filter(([k]) => lookup[k]).map(([k, label]) => {
+    const s = lookup[k];
+    const hRaw = (s.intHome ?? '0').toString();
+    const aRaw = (s.intAway ?? '0').toString();
+    const hn = parseFloat(hRaw) || 0;
+    const an = parseFloat(aRaw) || 0;
+    const total = hn + an;
+    const hw = total > 0 ? Math.round((hn / total) * 100) : 50;
+    return `
+      <div class="stat-row">
+        <div class="stat-val home">${hRaw}</div>
+        <div class="stat-center">
+          <div class="stat-name">${label}</div>
+          <div class="stat-bar">
+            <div class="bar-home" style="width:${hw}%"></div>
+            <div class="bar-away" style="width:${100 - hw}%"></div>
+          </div>
+        </div>
+        <div class="stat-val away">${aRaw}</div>
+      </div>`;
+  }).join('');
+
+  if (!rows) {
+    return `<div class="detail-section" style="margin-top:0.4rem">📊 Match Stats</div>
+            <p class="detail-note">Stats not available for this match</p>`;
+  }
+  return `<div class="detail-section" style="margin-top:0.4rem">📊 Match Stats</div>
+          <div class="stats-list">${rows}</div>`;
+}
 
 // =====================================================
 // POPUP OPEN / CLOSE
 // =====================================================
 openBtn.addEventListener('click', () => {
   scoresPopup.classList.add('open');
-  render();
+  loadActive();
 });
+closeScoresBtn.addEventListener('click', () => scoresPopup.classList.remove('open'));
+scoresPopup.addEventListener('click', e => { if (e.target === scoresPopup) scoresPopup.classList.remove('open'); });
 
-closeScoresBtn.addEventListener('click', closeScores);
-scoresPopup.addEventListener('click', e => { if (e.target === scoresPopup) closeScores(); });
+closeDetailBtn.addEventListener('click', () => detailOverlay.classList.remove('open'));
+detailOverlay.addEventListener('click', e => { if (e.target === detailOverlay) detailOverlay.classList.remove('open'); });
 
-function closeScores() {
-  scoresPopup.classList.remove('open');
-}
-
-// Detail popup
-closeDetailBtn.addEventListener('click', closeDetail);
-detailOverlay.addEventListener('click', e => { if (e.target === detailOverlay) closeDetail(); });
-
-function closeDetail() {
-  detailOverlay.classList.remove('open');
-}
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (detailOverlay.classList.contains('open')) detailOverlay.classList.remove('open');
+  else if (scoresPopup.classList.contains('open')) scoresPopup.classList.remove('open');
+});
 
 // =====================================================
 // TABS
@@ -187,271 +480,30 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     currentTab = btn.dataset.tab;
     render();
+    loadActive();          // refresh / lazy-load this tab
   });
 });
 
 // =====================================================
-// RENDER
+// REFRESH BUTTON
 // =====================================================
-function render() {
-  const data = MATCHES[currentTab];
-
-  if (!data || data.length === 0) {
-    matchesArea.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📭</div>
-        <div class="empty-msg">No matches here</div>
-      </div>`;
-    return;
-  }
-
-  matchesArea.innerHTML = data.map((m, i) =>
-    buildCard(m, i * 60)
-  ).join('');
-
-  matchesArea.querySelectorAll('.match-card').forEach(card => {
-    card.addEventListener('click', () => openDetail(Number(card.dataset.id)));
+refreshBtn.addEventListener('click', () => {
+  refreshBtn.classList.add('spinning');
+  Promise.resolve(loadActive({ silent: true })).finally(() => {
+    setTimeout(() => refreshBtn.classList.remove('spinning'), 500);
   });
-}
-
-function buildCard(m, animDelay) {
-  if (m.status === 'upcoming') return buildUpcomingCard(m, animDelay);
-  return buildScoreCard(m, animDelay);
-}
-
-function buildScoreCard(m, delay) {
-  const isLive  = m.status === 'live';
-  const min     = isLive ? (liveMinutes[m.id] ?? m.minute) : null;
-  const minStr  = min === 'HT' ? 'HT' : isLive ? `${min}'` : 'FT';
-
-  const statusBadge = isLive
-    ? `<span class="status-badge live-badge"><span class="badge-dot"></span>${minStr}</span>`
-    : `<span class="status-badge finished-badge">FT</span>`;
-
-  const homeScorers = (m.homeGoals || []).map(g => `<div class="scorer-item">${g}</div>`).join('');
-  const awayScorers = (m.awayGoals || []).map(g => `<div class="scorer-item">${g}</div>`).join('');
-  const hasScorers  = homeScorers || awayScorers;
-
-  return `
-    <div class="match-card ${m.status}" data-id="${m.id}" style="animation-delay:${delay}ms">
-      <div class="card-meta">
-        <span class="card-group">${m.group}</span>
-        ${statusBadge}
-      </div>
-      <div class="card-score-row">
-        <div class="card-team home">
-          <span class="card-flag">${m.home.flag}</span>
-          <div class="card-team-name">${m.home.code}</div>
-        </div>
-        <div class="score-box">
-          <span class="score-num" id="sh-${m.id}">${m.score[0]}</span>
-          <span class="score-sep">:</span>
-          <span class="score-num" id="sa-${m.id}">${m.score[1]}</span>
-        </div>
-        <div class="card-team away">
-          <span class="card-flag">${m.away.flag}</span>
-          <div class="card-team-name">${m.away.code}</div>
-        </div>
-      </div>
-      ${hasScorers ? `
-        <div class="card-scorers">
-          <div class="scorer-col">${homeScorers}</div>
-          <div class="scorer-col right">${awayScorers}</div>
-        </div>` : ''}
-      <div class="card-venue">📍 ${m.venue}</div>
-    </div>`;
-}
-
-function buildUpcomingCard(m, delay) {
-  return `
-    <div class="match-card upcoming" data-id="${m.id}" style="animation-delay:${delay}ms">
-      <div class="card-meta">
-        <span class="card-group">${m.group}</span>
-        <span class="status-badge upcoming-badge">KO ${m.kickOff}</span>
-      </div>
-      <div class="card-score-row">
-        <div class="card-team home">
-          <span class="card-flag">${m.home.flag}</span>
-          <div class="card-team-name">${m.home.code}</div>
-        </div>
-        <div class="vs-box">
-          <span class="vs-label">VS</span>
-          <span class="vs-time">${m.kickOff} ET</span>
-        </div>
-        <div class="card-team away">
-          <span class="card-flag">${m.away.flag}</span>
-          <div class="card-team-name">${m.away.code}</div>
-        </div>
-      </div>
-      <div class="card-venue">📍 ${m.venue}</div>
-    </div>`;
-}
+});
 
 // =====================================================
-// MATCH DETAIL
+// GOAL CELEBRATION + CONFETTI
 // =====================================================
-function openDetail(id) {
-  const all = [...MATCHES.live, ...MATCHES.upcoming, ...MATCHES.results];
-  const m   = all.find(x => x.id === id);
-  if (!m || m.status === 'upcoming') return;
-
-  const isLive = m.status === 'live';
-  const min    = isLive ? (liveMinutes[m.id] ?? m.minute) : null;
-  const minStr = isLive ? (min === 'HT' ? 'Half Time' : `${min}'`) : 'Full Time';
-  const statusCls = isLive ? 'live-badge' : 'finished-badge';
-
-  // Build goals sorted by minute
-  const parseGoal = (s, flag) => {
-    const last = s.split(' ').pop().replace("'", '');
-    const name = s.split(' ').slice(0, -1).join(' ');
-    return { minute: parseInt(last) || 0, name, flag };
-  };
-  const allGoals = [
-    ...(m.homeGoals || []).map(g => parseGoal(g, m.home.flag)),
-    ...(m.awayGoals || []).map(g => parseGoal(g, m.away.flag)),
-  ].sort((a, b) => a.minute - b.minute);
-
-  const goalsHTML = allGoals.length
-    ? allGoals.map(g => `
-        <div class="goal-row">
-          <span class="goal-min">${g.minute}'</span>
-          <span>${g.flag}</span>
-          <span>${g.name}</span>
-        </div>`).join('')
-    : `<p style="text-align:center;color:#bbb;font-size:0.82rem;font-weight:800;padding:0.6rem 0">No goals yet ⏳</p>`;
-
-  const statsHTML = m.stats ? buildStats(m) : '';
-
-  detailContent.innerHTML = `
-    <div class="detail-header">
-      <div class="detail-comp">⚽ ${m.group}</div>
-      <div class="detail-status ${statusCls}">
-        ${isLive ? '<span class="badge-dot"></span>' : ''} ${minStr}
-      </div>
-      <div class="detail-teams">
-        <div class="detail-team">
-          <span class="detail-flag">${m.home.flag}</span>
-          <div class="detail-team-code">${m.home.code}</div>
-          <div class="detail-team-full">${m.home.name}</div>
-        </div>
-        <div class="detail-score-display">
-          <span class="detail-score-num">${m.score[0]}</span>
-          <span class="detail-score-sep">:</span>
-          <span class="detail-score-num">${m.score[1]}</span>
-        </div>
-        <div class="detail-team">
-          <span class="detail-flag">${m.away.flag}</span>
-          <div class="detail-team-code">${m.away.code}</div>
-          <div class="detail-team-full">${m.away.name}</div>
-        </div>
-      </div>
-      <div class="detail-venue">📍 ${m.venue}</div>
-    </div>
-
-    <div class="detail-body">
-      <div class="detail-section">⚽ Goals</div>
-      <div class="goals-list">${goalsHTML}</div>
-      ${statsHTML}
-    </div>`;
-
-  detailOverlay.classList.add('open');
-}
-
-function buildStats(m) {
-  const s = m.stats;
-  const rows = [
-    { label: 'Possession', h: `${s.possession[0]}%`, a: `${s.possession[1]}%`, hn: s.possession[0], an: s.possession[1] },
-    { label: 'Shots',        h: s.shots[0],         a: s.shots[1],         hn: s.shots[0],      an: s.shots[1] },
-    { label: 'On Target',    h: s.onTarget[0],      a: s.onTarget[1],      hn: s.onTarget[0],   an: s.onTarget[1] },
-    { label: 'Corners',      h: s.corners[0],       a: s.corners[1],       hn: s.corners[0],    an: s.corners[1] },
-    { label: 'Fouls',        h: s.fouls[0],         a: s.fouls[1],         hn: s.fouls[0],      an: s.fouls[1] },
-    { label: 'Yellow Cards 🟨', h: s.yellows[0],   a: s.yellows[1],       hn: s.yellows[0],    an: s.yellows[1] },
-  ];
-
-  const rowsHTML = rows.map(r => {
-    const total = r.hn + r.an;
-    const hw = total > 0 ? Math.round((r.hn / total) * 100) : 50;
-    const aw = 100 - hw;
-    return `
-      <div class="stat-row">
-        <div class="stat-val home">${r.h}</div>
-        <div class="stat-center">
-          <div class="stat-name">${r.label}</div>
-          <div class="stat-bar">
-            <div class="bar-home" style="width:${hw}%"></div>
-            <div class="bar-away" style="width:${aw}%"></div>
-          </div>
-        </div>
-        <div class="stat-val away">${r.a}</div>
-      </div>`;
-  }).join('');
-
-  return `
-    <div class="detail-section" style="margin-top:0.4rem">📊 Match Stats</div>
-    <div class="stats-list">${rowsHTML}</div>`;
-}
-
-// =====================================================
-// LIVE SIMULATION
-// =====================================================
-function tickLive() {
-  let rerender = false;
-
-  MATCHES.live.forEach(m => {
-    if (m.minute === 'HT') return;
-
-    const cur = liveMinutes[m.id];
-    if (cur >= 90) return;
-
-    // Advance 1–3 minutes each tick
-    const advance = Math.floor(Math.random() * 3) + 1;
-    liveMinutes[m.id] = Math.min(90, cur + advance);
-    m.minute = liveMinutes[m.id];
-    rerender = true;
-
-    // 12% chance of goal per tick
-    if (Math.random() < 0.12) {
-      const homeGoal = Math.random() < 0.5;
-      const min = liveMinutes[m.id];
-
-      if (homeGoal) {
-        m.score[0]++;
-        m.homeGoals.push(`${m.home.code.charAt(0) + m.home.code.slice(1).toLowerCase()} ${min}'`);
-        if (currentTab === 'live') flashScore(`sh-${m.id}`, true);
-      } else {
-        m.score[1]++;
-        m.awayGoals.push(`${m.away.code.charAt(0) + m.away.code.slice(1).toLowerCase()} ${min}'`);
-        if (currentTab === 'live') flashScore(`sa-${m.id}`, true);
-      }
-      showGoalCelebration();
-    }
-  });
-
-  if (rerender && scoresPopup.classList.contains('open') && currentTab === 'live') {
-    render();
-  }
-}
-
-function flashScore(id, withGoal) {
-  // Short delay so render() has run first
-  setTimeout(() => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.add('goal-pop');
-    setTimeout(() => el.classList.remove('goal-pop'), 500);
-  }, 80);
-}
-
 function showGoalCelebration() {
   goalOverlay.classList.add('show');
   launchConfetti();
   setTimeout(() => goalOverlay.classList.remove('show'), 1800);
 }
 
-// =====================================================
-// CONFETTI
-// =====================================================
-const CONFETTI_COLORS = ['#FFD700','#003087','#e60000','#22c55e','#f97316','#a855f7','#ffffff'];
+const CONFETTI_COLORS = ['#FFD700', '#003087', '#e60000', '#22c55e', '#f97316', '#a855f7', '#ffffff'];
 
 function launchConfetti() {
   for (let i = 0; i < 70; i++) {
@@ -465,25 +517,12 @@ function launchConfetti() {
         background: ${CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]};
         border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
         animation-duration: ${Math.random() * 1.8 + 1.4}s;
-        animation-delay: ${Math.random() * 0.4}s;
-      `;
+        animation-delay: ${Math.random() * 0.4}s;`;
       confettiRoot.appendChild(el);
       setTimeout(() => el.remove(), 3000);
     }, i * 25);
   }
 }
-
-// =====================================================
-// REFRESH BUTTON
-// =====================================================
-refreshBtn.addEventListener('click', () => {
-  refreshBtn.classList.add('spinning');
-  tickLive();
-  setTimeout(() => {
-    refreshBtn.classList.remove('spinning');
-    render();
-  }, 500);
-});
 
 // =====================================================
 // FLOATING BACKGROUND BALLS
@@ -498,19 +537,37 @@ function spawnBgBalls() {
       left: ${Math.random() * 100}%;
       font-size: ${Math.random() * 1.4 + 0.9}rem;
       animation-duration: ${Math.random() * 14 + 10}s;
-      animation-delay: -${Math.random() * 20}s;
-    `;
+      animation-delay: -${Math.random() * 20}s;`;
     container.appendChild(el);
   }
 }
 
 // =====================================================
-// AUTO-TICK (every 30 s)
+// DYNAMIC DATE LABELS
 // =====================================================
-setInterval(tickLive, 30_000);
+function setDateLabels() {
+  const pretty = new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const sub = document.getElementById('popupSubtitle');
+  const chip = document.getElementById('dateChip');
+  if (sub) sub.textContent = `Live Scores · ${pretty}`;
+  if (chip) chip.textContent = pretty;
+}
+
+// =====================================================
+// AUTO-REFRESH (live tab keeps polling even when closed so
+//               goal celebration is ready on open)
+// =====================================================
+setInterval(() => {
+  if (scoresPopup.classList.contains('open')) {
+    loadActive({ silent: true });
+  } else {
+    loadTab('live', { silent: true });   // keep live state fresh
+  }
+}, REFRESH_MS);
 
 // =====================================================
 // INIT
 // =====================================================
 spawnBgBalls();
-render(); // pre-render so first open is instant
+setDateLabels();
+loadTab('live', { silent: true });        // warm up so first open is instant
