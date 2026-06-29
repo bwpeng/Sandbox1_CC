@@ -9,7 +9,7 @@
 const API_KEY    = '3';                                  // TheSportsDB free/test key
 const API_V1     = `https://www.thesportsdb.com/api/v1/json/${API_KEY}`;
 const WC_LEAGUE  = '4429';                               // FIFA World Cup league id
-const REFRESH_MS = 45000;                                // auto-refresh interval
+const REFRESH_MS = 25000;                                // auto-refresh interval
 
 // =====================================================
 // COUNTRY FLAG EMOJI MAP (fallback to crest badge image)
@@ -147,6 +147,9 @@ async function loadTab(tab, { silent = false } = {}) {
     if (tab === 'live') {
       const data = await fetchJSON(`${API_V1}/eventsday.php?d=${todayStr()}&l=${WC_LEAGUE}`);
       events = data.events || [];
+      // eventsday is heavily cached; refresh in-play matches from the
+      // fresher single-event endpoint to cut the live-score delay.
+      await refreshLiveEvents(events);
       // sort: in-play first, then upcoming, then finished; by kickoff time
       events.sort((a, b) => order(a) - order(b) || tsOf(a) - tsOf(b));
     } else if (tab === 'upcoming') {
@@ -160,7 +163,7 @@ async function loadTab(tab, { silent = false } = {}) {
     events.forEach(ev => { eventsById[ev.idEvent] = ev; });
     state[tab] = events;
 
-    if (tab === 'live') detectGoals(events);
+    if (tab === 'live') { detectGoals(events); markUpdated(); }
     if (currentTab === tab) render();
   } catch (err) {
     if (currentTab === tab) showError(err.message);
@@ -175,7 +178,36 @@ function tsOf(ev) {
   return ev.strTimestamp ? new Date(ev.strTimestamp + 'Z').getTime() : 0;
 }
 
-function loadActive(opts) { loadTab(currentTab, opts); }
+function loadActive(opts) { return loadTab(currentTab, opts); }
+
+// Refresh in-play matches (and any that have kicked off but still show a
+// stale "NS") from the per-event endpoint, which updates far sooner than
+// the cached day list. Overwrites score/status fields in place.
+async function refreshLiveEvents(events) {
+  const targets = events.filter(ev => {
+    if (classify(ev) === 'finished') return false;
+    if (classify(ev) === 'live') return true;
+    const t = tsOf(ev);
+    return t && t <= Date.now();          // started, but day list lags
+  });
+
+  await Promise.all(targets.map(async ev => {
+    try {
+      const d = await fetchJSON(`${API_V1}/lookupevent.php?id=${ev.idEvent}`);
+      const fresh = d.events && d.events[0];
+      if (!fresh) return;
+      if (fresh.strStatus  != null) ev.strStatus  = fresh.strStatus;
+      if (fresh.strProgress != null) ev.strProgress = fresh.strProgress;
+      if (fresh.intHomeScore != null) ev.intHomeScore = fresh.intHomeScore;
+      if (fresh.intAwayScore != null) ev.intAwayScore = fresh.intAwayScore;
+    } catch { /* keep cached values on failure */ }
+  }));
+}
+
+function markUpdated() {
+  const el = document.getElementById('updatedAt');
+  if (el) el.textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
 
 // =====================================================
 // GOAL DETECTION (celebrate on real score change)
