@@ -6,10 +6,18 @@
 // =====================================================
 // CONFIG
 // =====================================================
-const API_KEY    = '3';                                  // TheSportsDB free/test key
-const API_V1     = `https://www.thesportsdb.com/api/v1/json/${API_KEY}`;
-const WC_LEAGUE  = '4429';                               // FIFA World Cup league id
-const REFRESH_MS = 25000;                                // auto-refresh interval
+const API_KEY     = '3';                                 // TheSportsDB free/test key (v1)
+const API_V1      = `https://www.thesportsdb.com/api/v1/json/${API_KEY}`;
+const API_V2      = 'https://www.thesportsdb.com/api/v2/json';
+const WC_LEAGUE   = '4429';                              // FIFA World Cup league id
+const REFRESH_MS  = 25000;                               // auto-refresh interval
+
+// ── Premium real-time live scores ───────────────────────────────────
+// Paste a TheSportsDB Premium key (https://www.thesportsdb.com/pricing)
+// here to unlock the low-latency v2 /livescore feed (true live minute +
+// near-instant score). Leave empty to use the free per-event refresh,
+// which is the freshest source available without a paid key.
+const PREMIUM_KEY = '';
 
 // =====================================================
 // COUNTRY FLAG EMOJI MAP (fallback to crest badge image)
@@ -147,9 +155,9 @@ async function loadTab(tab, { silent = false } = {}) {
     if (tab === 'live') {
       const data = await fetchJSON(`${API_V1}/eventsday.php?d=${todayStr()}&l=${WC_LEAGUE}`);
       events = data.events || [];
-      // eventsday is heavily cached; refresh in-play matches from the
-      // fresher single-event endpoint to cut the live-score delay.
-      await refreshLiveEvents(events);
+      // eventsday is heavily cached; overlay fresher live data on top —
+      // premium v2 /livescore if a key is set, else free per-event refresh.
+      await applyLiveOverlay(events);
       // sort: in-play first, then upcoming, then finished; by kickoff time
       events.sort((a, b) => order(a) - order(b) || tsOf(a) - tsOf(b));
     } else if (tab === 'upcoming') {
@@ -179,6 +187,48 @@ function tsOf(ev) {
 }
 
 function loadActive(opts) { return loadTab(currentTab, opts); }
+
+// Overlay the freshest available live data onto today's matches.
+// Uses the premium v2 /livescore feed when a key is configured, and
+// transparently falls back to the free per-event refresh otherwise.
+async function applyLiveOverlay(events) {
+  if (PREMIUM_KEY) {
+    const live = await fetchPremiumLivescores();
+    if (live && live.length) {
+      const byId = {};
+      live.forEach(p => { if (p.idEvent) byId[p.idEvent] = p; });
+      let matched = 0;
+      events.forEach(ev => {
+        const p = byId[ev.idEvent];
+        if (!p) return;
+        matched++;
+        if (p.strStatus    != null) ev.strStatus    = p.strStatus;
+        if (p.strProgress  != null) ev.strProgress  = p.strProgress;
+        if (p.intHomeScore != null) ev.intHomeScore = p.intHomeScore;
+        if (p.intAwayScore != null) ev.intAwayScore = p.intAwayScore;
+      });
+      if (matched) return;          // premium data applied; done
+    }
+    // premium key set but feed empty/failed → fall through to free path
+  }
+  await refreshLiveEvents(events);
+}
+
+// Premium v2 /livescore feed (real-time). Returns an array of live events,
+// or null if no key is set, the key is rejected, or the request fails.
+async function fetchPremiumLivescores() {
+  if (!PREMIUM_KEY) return null;
+  try {
+    const res = await fetch(`${API_V2}/livescore/soccer`, { headers: { 'X-API-KEY': PREMIUM_KEY } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.Message) return null;             // invalid key / error
+    const arr = data.livescore || data.events || [];
+    return arr.filter(e => e.idLeague === WC_LEAGUE || e.strLeague === 'FIFA World Cup');
+  } catch {
+    return null;
+  }
+}
 
 // Refresh in-play matches (and any that have kicked off but still show a
 // stale "NS") from the per-event endpoint, which updates far sooner than
